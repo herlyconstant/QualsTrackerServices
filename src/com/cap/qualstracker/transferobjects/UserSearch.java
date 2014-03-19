@@ -5,9 +5,10 @@ import java.io.Serializable;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.cap.qualstracker.enums.AssociationLevel;
+import com.mongodb.BasicDBObject;
 
-@XmlRootElement
-public class UserSearch implements Serializable{
+@XmlRootElement(name = "UserSearch")
+public class UserSearch extends BasicDBObject implements Serializable{
 
 	private static final long serialVersionUID = 1L;
 
@@ -20,6 +21,24 @@ public class UserSearch implements Serializable{
 	public UserSearch(){
 		super();
 	}
+
+	/**
+	 * @param userRole
+	 * @param numberOfHits
+	 * @param clickedQualId
+	 * @param searchedQualId
+	 * @param associationLevel
+	 */
+	public UserSearch(UserRole userRole, int numberOfHits,
+			String clickedQualId, String searchedQualId,
+			AssociationLevel associationLevel) {
+		put("userRole", userRole);
+		put("numberOfHits", numberOfHits);
+		put("clickedQualId", clickedQualId);
+		put("searchedQualId", searchedQualId);
+		put("associationLevel", associationLevel);
+	}
+
 
 	/**
 	 * @return the userRole

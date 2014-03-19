@@ -1,12 +1,15 @@
 package com.cap.qualstracker.transferobjects;
 
 import java.io.Serializable;
-
+import java.util.ArrayList;
+import java.util.List;
 import javax.xml.bind.annotation.XmlRootElement;
+
+import com.mongodb.BasicDBObject;
 
 
 @XmlRootElement
-public class User implements Serializable{
+public class User extends BasicDBObject implements Serializable{
 
 	private static final long serialVersionUID = 1L;
 
@@ -14,12 +17,28 @@ public class User implements Serializable{
 	protected String userName;
 	protected String emailId;
 	protected String phoneNo;
-	protected Group group;
+	protected List<Group> group = new ArrayList<Group>();
 	
 	public User(){
-		
-		
+		super();
 	}
+	
+	/**
+	 * @param userRole
+	 * @param userName
+	 * @param emailId
+	 * @param phoneNo
+	 * @param group
+	 */
+	public User(UserRole userRole, String userName, String emailId,
+			String phoneNo, List<Group> group) {
+		put("userRole", userRole);
+		put("userName", userName);
+		put("emailId", emailId);
+		put("phoneNo", phoneNo);
+		put("group", group);
+	}
+
 
 	/**
 	 * @return the userRole
@@ -82,14 +101,14 @@ public class User implements Serializable{
 	/**
 	 * @return the group
 	 */
-	public Group getGroup() {
+	public List<Group> getGroup() {
 		return group;
 	}
 
 	/**
 	 * @param group the group to set
 	 */
-	public void setGroup(Group group) {
+	public void setGroup(List<Group> group) {
 		this.group = group;
 	}	
 }

@@ -4,9 +4,11 @@ import java.io.Serializable;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
+import com.mongodb.BasicDBObject;
+
 
 @XmlRootElement
-public class QualificationAssociation implements Serializable{
+public class QualificationAssociation extends BasicDBObject implements Serializable{
 
 	private static final long serialVersionUID = 1L;
 
@@ -17,6 +19,20 @@ public class QualificationAssociation implements Serializable{
 	public QualificationAssociation(){
 		super();
 	}
+
+	/**
+	 * @param qualsAssociationId
+	 * @param searchPercentage
+	 * @param qualification
+	 */
+	public QualificationAssociation(String qualsAssociationId,
+			String searchPercentage, Qualification qualification) {
+
+		put("qualsAssociationId", qualsAssociationId);
+		put("searchPercentage", searchPercentage);
+		put("qualification", qualification);
+	}
+
 
 	/**
 	 * @return the qualsAssociationId

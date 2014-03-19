@@ -8,6 +8,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
+import org.apache.log4j.Logger;
 import org.bson.types.ObjectId;
 
 import com.cap.qualstracker.interfaces.QualificationServiceInterface;
@@ -17,12 +18,15 @@ import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+import com.mongodb.DBRef;
 import com.mongodb.MongoException;
 import com.mongodb.util.JSON;
 
 @Path("/qualificationservice")
 public class QualificationService extends BaseService implements QualificationServiceInterface{
 
+	private static final Logger logger = Logger.getLogger(QualificationService.class);
+	
 	DB database = getDB();
 	
 	ObjectId id = ObjectId.get();
@@ -32,24 +36,34 @@ public class QualificationService extends BaseService implements QualificationSe
 	@Path("/getqualification/{keyWord}")
 	public String search(@PathParam("keyWord") String keyword) {
 	
-		System.out.println("getqualification keyword "+keyword);
+		System.out.println("getqualification keyword: "+keyword);
 		
 		DBCursor cursor = null;
 		
 		try{
 			
 			DBCollection collection = database.getCollection("qualification");
-			BasicDBObject dbObject = new BasicDBObject();
-			dbObject.put("keyword", keyword);
 			
-			cursor = collection.find(dbObject);
+			BasicDBObject query = new BasicDBObject();
+			query.put("searchKeywords.keywordName", keyword.toUpperCase().trim());
+			
+			BasicDBObject fields = new BasicDBObject();
+			fields.put("searchKeywords.$", 1);
+			
+			collection.ensureIndex(new BasicDBObject("searchKeywords.keywordName", 1));
+			
+			cursor = collection.find(query,fields);
 			
 			while (cursor.hasNext()) {
 				System.out.println(cursor.next());
 			}
+			
+			logger.info("Qualfication retrieved for keyword "+keyword);
 		}
 		catch(MongoException mex){
 			System.out.println("Error: "+mex);
+			
+			logger.error(mex);
 		}
 		finally{
 			cursor.close();
@@ -74,9 +88,12 @@ public class QualificationService extends BaseService implements QualificationSe
 			field.put("_id", 0);
 
 			cursor = collection.find(query, field);
+			
+			logger.info("list of maturity retrieved");
 		} 
-		catch (MongoException ex) {
-			ex.printStackTrace(System.out);
+		catch (MongoException mex) {
+			//mex.printStackTrace(System.out);
+			logger.error(mex);
 		}
 		finally{
 			cursor.close();
@@ -93,25 +110,45 @@ public class QualificationService extends BaseService implements QualificationSe
 	@POST
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Path("/addgroupqual/{name}/{qual}/{maturity}/{account}/{qualtype}")
-	public void addQualification(@PathParam("name") String name, @PathParam("qual") String qual,
+	public void addQualification(@PathParam("name") String username, @PathParam("qual") String qual,
 			@PathParam("maturity") String maturity, @PathParam("account") String account,
 			@PathParam("qualtype") String qualtype) {
 		
+		
+		//Search each collection base on the incoming pathparam and set the variables for Qualification accordingly.
+
+		/*DBRef myDbRef = new DBRef(database, "users", new ObjectId(
+				"4b0552e4f0da7d1eb6f126a2"));
+		DBObject doc = myDbRef.fetch();
+		System.out.println("DBRef.fetch(): "+doc);*/
+		
+		DBCollection userColl = database.getCollection("users");
+		DBObject userQuery = new BasicDBObject();
+		userQuery.put("userName", username);
+		
+		BasicDBObject userField = new BasicDBObject();
+		userField.put("userRole.roleType",1);
+		userField.put("userRole.accessLevel",1);
+		userField.put("userRole.searchAssociationWeightAge",1);
+		
+		userColl.find(userQuery,userField);
+
+		Qualification userQual = new Qualification();
+		
 		try {
 			
-			DBCollection collection = database.getCollection("groupqualification");
-			DBObject quals = new BasicDBObject();
-			quals.put("_id", id.toString());
-			quals.put("username", name.toUpperCase());
-			quals.put("qual", qual.toUpperCase());
-			quals.put("maturity", maturity.toUpperCase());
-			quals.put("account", account.toUpperCase());
-			quals.put("qualtype", qualtype.toUpperCase());
-
-			collection.insert(quals);
+			DBCollection collection = database.getCollection("qualification");
 			
-		} catch (MongoException ex) {
-			ex.printStackTrace(System.out);
+			collection.setObjectClass(Qualification.class);
+			
+			collection.save(userQual);
+			
+			logger.info("qualification associated");
+			
+			
+		} catch (MongoException mex) {
+			//mex.printStackTrace(System.out);
+			logger.error(mex);
 		}
 	}
 
@@ -131,9 +168,12 @@ public class QualificationService extends BaseService implements QualificationSe
 			field.put("_id", 0);
 
 			cursor = collection.find(query, field);
+			
+			logger.info("qualification types retrieved");
 		} 
-		catch (MongoException ex) {
-			ex.printStackTrace(System.out);
+		catch (MongoException mex) {
+			//mex.printStackTrace(System.out);
+			logger.error(mex);
 		}
 		finally{
 			cursor.close();

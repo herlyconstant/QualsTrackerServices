@@ -4,20 +4,38 @@ import java.io.Serializable;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
+import com.mongodb.BasicDBObject;
+
 @XmlRootElement
-public class Qualification implements Serializable{
+public class Qualification extends BasicDBObject implements Serializable{
 
 	private static final long serialVersionUID = 1L;
 	
 	private UserSearch userSearch;
 	private QualificationAttribute qualificationAttribute;
-	private QualificationAssociation qualificationAssociation;
 	private GroupQualification groupQualification;
 	private SearchKeywords keywords;
 
 	public Qualification(){
 		super();
 	}
+	
+	/**
+	 * @param userSearch
+	 * @param qualificationAttribute
+	 * @param groupQualification
+	 * @param keywords
+	 */
+	public Qualification(UserSearch userSearch,
+			QualificationAttribute qualificationAttribute,
+			GroupQualification groupQualification, SearchKeywords keywords) {
+
+		put("userSearch", userSearch);
+		put("qualificationAttribute", qualificationAttribute);
+		put("groupQualification", groupQualification);
+		put("keywords", keywords);
+	}
+
 
 	/**
 	 * @return the userSearch
@@ -46,21 +64,6 @@ public class Qualification implements Serializable{
 	public void setQualificationAttribute(
 			QualificationAttribute qualificationAttribute) {
 		this.qualificationAttribute = qualificationAttribute;
-	}
-
-	/**
-	 * @return the qualificationAssociation
-	 */
-	public QualificationAssociation getQualificationAssociation() {
-		return qualificationAssociation;
-	}
-
-	/**
-	 * @param qualificationAssociation the qualificationAssociation to set
-	 */
-	public void setQualificationAssociation(
-			QualificationAssociation qualificationAssociation) {
-		this.qualificationAssociation = qualificationAssociation;
 	}
 
 	/**
