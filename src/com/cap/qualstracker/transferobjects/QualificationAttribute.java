@@ -4,9 +4,11 @@ import java.io.Serializable;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
+import com.mongodb.BasicDBObject;
+
 
 @XmlRootElement
-public class QualificationAttribute implements Serializable{
+public class QualificationAttribute extends BasicDBObject implements Serializable{
 
 	private static final long serialVersionUID = 1L;
 
@@ -16,6 +18,17 @@ public class QualificationAttribute implements Serializable{
 	
 	public QualificationAttribute(){
 		super();
+	}
+
+	/**
+	 * @param name
+	 * @param value
+	 * @param type
+	 */
+	public QualificationAttribute(String name, String value, String type) {
+		put("name", name);
+		put("value", value);
+		put("type", type);
 	}
 
 	/**
@@ -59,6 +72,4 @@ public class QualificationAttribute implements Serializable{
 	public void setType(String type) {
 		this.type = type;
 	}
-	
-	
 }

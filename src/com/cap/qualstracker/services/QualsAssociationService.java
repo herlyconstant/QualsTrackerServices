@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -13,6 +14,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
+import org.apache.log4j.Logger;
 import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -25,83 +27,53 @@ import com.cap.qualstracker.transferobjects.UserSearch;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
 
 @Path("/qualsassociationservice")
 public class QualsAssociationService extends BaseService implements QualsAssociationServiceInterface{
 	
+	private static final Logger logger = Logger.getLogger(QualsAssociationService.class);
+
+	DB database = getDB();
+	
 	@Context
 	UriInfo uriInfo;
 	
-	@GET
-	@Produces(MediaType.APPLICATION_JSON)
-	@Path("/getqualsassc")
-	public QualificationAssociation getQualsAssc(){
-		
-		QualificationAssociation qualsAssc = new QualificationAssociation();
-		
-		ObjectMapper mapper = new ObjectMapper();
-		
-		qualsAssc.setQualsAssociationId("99912");
-		qualsAssc.setSearchPercentage("68");
-		
-		try{
-			
-			mapper.writeValueAsString(qualsAssc);
-			
-		}
-		catch (JsonGenerationException e) {
-			 
-			e.printStackTrace();
-	 
-		} catch (JsonMappingException e) {
-	 
-			e.printStackTrace();
-	 
-		} catch (IOException e) {
-	 
-			e.printStackTrace();
-	 
-		}
-				
-		return qualsAssc;
-	}
-
-	@PUT
-	@Consumes(MediaType.APPLICATION_JSON)
+	@POST
 	@Path("/addupdateusersearch/{qualId}/{associateQualId}/{associationlevel}")
-	public Response addOrUpdateUserSearch(@PathParam("qualId") String qualId, @PathParam("associateQualId") String associatedQualId,
+	@Consumes(MediaType.APPLICATION_JSON)
+	public void addOrUpdateUserSearch(@PathParam("qualId") String qualId, @PathParam("associateQualId") String associatedQualId,
 			@PathParam("associationlevel") AssociationLevel associationLevel) {
 		
-		System.out.println("Add or Update UserSearch Called..."+qualId);
-		
-		Response response = null;
-		
-		UserSearch userSearch = new UserSearch();
-		userSearch.setClickedQualId(associatedQualId);
-		userSearch.setSearchedQualId(qualId);
-		userSearch.setAssociationLevel(associationLevel);
+		System.out.println("Add or Update UserSearch Called...");
 		
 		try{
-		DB database = getDB();
-		
-		BasicDBObject updateQuery = new BasicDBObject();
-		updateQuery.put("clickedqualid", associatedQualId);
-		updateQuery.put("searchedqualid", qualId);
-		updateQuery.put("associationlevel", associationLevel.toString().toUpperCase());
-		
-		DBCollection collection = database.getCollection("usersearch");
-		collection.save(updateQuery);
-		
-		response = Response.ok(userSearch).build();
+			DBCollection collection = database.getCollection("usersearch");
+			
+			BasicDBObject query = new BasicDBObject();
+			
+			BasicDBObject update = new BasicDBObject();
+			BasicDBObject fields = new BasicDBObject();
+			fields.put("clickedQualId", qualId.toString());
+			fields.put("searchedQualId", associatedQualId.toString());
+			
+			if(associationLevel.toString().toUpperCase().equals(AssociationLevel.INTERESTED.toString())){
+				fields.put("associationLevel", AssociationLevel.INTERESTED.toString());
+			}
+			else if(associationLevel.toString().toUpperCase().equals(AssociationLevel.USEFUL.toString())){
+				fields.put("associationLevel", AssociationLevel.USEFUL.toString());
+			}
+			
+			update.put("$set", fields);
+				
+			collection.update(query, update);
+
 		}
 		catch(Exception ex){
-			System.out.println("Exception: "+ex.getMessage());
-		}
-		finally{
+			System.out.println("error: "+ex.getMessage());
 			
+			logger.error(ex);
 		}
-		
-		return response;
 	}
 
 	@PUT

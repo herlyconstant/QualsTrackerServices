@@ -16,9 +16,17 @@ public class UserGroup extends BasicDBObject implements Serializable{
 	protected User user;
 
 	public UserGroup(){
-		
+		super();
 	}
 
+	/**
+	 * @param status
+	 * @param user
+	 */
+	public UserGroup(Status status, User user) {
+		put("status", status);
+		put("user", user);
+	}
 
 	/**
 	 * @return the status

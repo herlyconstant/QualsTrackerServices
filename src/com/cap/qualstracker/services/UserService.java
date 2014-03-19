@@ -9,15 +9,11 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import org.bson.types.ObjectId;
+import org.apache.log4j.Logger;
 
-import com.cap.qualstracker.enums.GroupType;
 import com.cap.qualstracker.enums.Status;
 import com.cap.qualstracker.interfaces.UserServiceInterface;
-import com.cap.qualstracker.transferobjects.Group;
 import com.cap.qualstracker.transferobjects.User;
-import com.cap.qualstracker.transferobjects.UserGroup;
-import com.cap.qualstracker.transferobjects.UserRole;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
@@ -27,6 +23,8 @@ import com.mongodb.util.JSON;
 
 @Path("/userservice")
 public class UserService extends BaseService implements UserServiceInterface{
+	
+	private static final Logger logger = Logger.getLogger(UserService.class);
 
 	DB database = getDB();
 	
@@ -35,15 +33,32 @@ public class UserService extends BaseService implements UserServiceInterface{
 	@Path("/findbyemailid/{emailId}")
 	public String findByEmailId(@PathParam("emailId")String emailId) {
 		
-		User user = new User();
-		user.setEmailId(emailId);	
-		
-		BasicDBObject query = new BasicDBObject();
-		BasicDBObject emailField = new BasicDBObject();
-		emailField.put("emailId", user.getEmailId());
-		
+		System.out.println("E-mail ID passed: " + emailId);
+
 		DBCollection collection = database.getCollection("users");
-		DBCursor cursor = collection.find(query,emailField);	
+
+		BasicDBObject query = new BasicDBObject();
+		query.put("emailId", emailId.trim());
+
+		collection.ensureIndex(new BasicDBObject("emailId", 1));
+
+		collection.setObjectClass(User.class);
+
+		DBCursor cursor = collection.find(query);
+
+		try {
+			while (cursor.hasNext()) {
+				System.out.println(cursor.next());
+			}
+			logger.info("E-mail: " + emailId);
+		}		
+		catch(MongoException mex){
+			logger.error(mex);
+		}
+		
+		finally{
+			cursor.close();
+		}
 		
 		return JSON.serialize(cursor);
 	}
@@ -52,59 +67,73 @@ public class UserService extends BaseService implements UserServiceInterface{
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("/findbyname/{username}")
 	public String findByName(@PathParam("username")String userName) {
-
-		User user = new User();
-		user.setUserName(userName);
 		
 		DB database = getDB();
 		
 		DBCollection collection = database.getCollection("users");
-		BasicDBObject name = new BasicDBObject();
-		name.put("username", userName);
 		
-		DBCursor cursor = collection.find();
+		BasicDBObject name = new BasicDBObject();
+		name.put("userName", userName);
+		
+		DBCursor cursor = collection.find(name);
+		
 		try{
 		while(cursor.hasNext()){
-			
 			System.out.println(cursor.next());
 		}
+			logger.info("Name: "+userName);
 		}
 		catch(Exception ex){
-			System.out.println(ex.getMessage());
+			//System.out.println(ex.getMessage());
+			logger.error(ex);
 		}
 		finally{
 			cursor.close();
 		}
 	
-		
 		return JSON.serialize(cursor);
-	}
-
-	public void associateToGroup(String userId, String groupId) {
-		
 	}
 
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("/retrievependingusergroup/{userId}")
-	public UserGroup retrievePendingUserGroupAssociations(@PathParam("userId") String userId) {
+	public String retrievePendingUserGroupAssociations(
+			@PathParam("userId") String userId) {
 
-		UserGroup userGroup = new UserGroup();
-		userGroup.setStatus(Status.PENDING);
-		
-		BasicDBObject pendingQuery = new BasicDBObject();
-		pendingQuery.put("status", userGroup.getStatus());
-		
-		DBCollection collection = database.getCollection("usergroup");
-		collection.find(pendingQuery);
-		
-		return userGroup;
+		System.out.println("User: " + userId);
+
+		DBCursor cursor = null;
+
+		try {
+			DBCollection collection = database.getCollection("qualification");
+
+			BasicDBObject query = new BasicDBObject();
+			query.put("userName", userId);
+			query.put("groupQualification.status", Status.PENDING.toString());
+
+			cursor = collection.find(query);
+
+			while (cursor.hasNext()) {
+				System.out.println(cursor.next());
+			}
+	
+		} 
+		catch (Exception mex) {
+			
+			//System.out.println("Error: " + mex);
+			logger.error(mex);
+		} 
+		finally {
+			cursor.close();
+		}
+
+		return JSON.serialize(cursor);
 	}
 
 	@POST
 	@Path("/usertogroup/{groupname}/{user}")
 	@Consumes(MediaType.APPLICATION_JSON)
-	public void associateUserToGroup(@PathParam("groupname") String groupName,
+	public void associateToGroup(@PathParam("groupname") String groupName,
 			@PathParam("user") String userId) {
 
 		String groupType = "";
@@ -116,6 +145,7 @@ public class UserService extends BaseService implements UserServiceInterface{
 			DBCollection collection = database.getCollection("groups");
 			BasicDBObject query = new BasicDBObject();
 			query.put("groupName", groupName);
+			
 			BasicDBObject field = new BasicDBObject();
 			field.put("groupType", 1);
 			field.put("_id", 0);
@@ -124,8 +154,7 @@ public class UserService extends BaseService implements UserServiceInterface{
 
 			while(cursor.hasNext()){
 
-				System.out.println(cursor.next());
-				
+				//System.out.println(cursor.next());				
 				groupType = cursor.curr().get("groupType").toString();
 			}
 			
@@ -140,46 +169,57 @@ public class UserService extends BaseService implements UserServiceInterface{
 			BasicDBObject update = new BasicDBObject();
 			update.put("$push", new BasicDBObject("groups",userField));
 			
+			userColl.ensureIndex(new BasicDBObject("groups.groupName",1),new BasicDBObject("unique",true));
+			
 			userColl.update(userQuery, update);
-		} 
+			
+			logger.info(userId+" is now associated with "+groupName);
+			
+		}
+		catch(MongoException mex){
+			//System.out.println(mex);
+			logger.fatal(mex);
+		}
 		finally{
 			cursor.close();
 		}
-		System.out.println("GroupType: "+groupType);
-		System.out.println("GroupName: "+groupName);
-
 	}
 	
 	@POST
-	@Path("/insertuser/{username}")
+	@Path("/updateuserassoc/{user}/{status}")
 	@Consumes(MediaType.APPLICATION_JSON)
-	public void insertUser(@PathParam("username") String username){
+	public void updateUserGroupAssoc(@PathParam("user") String userId,@PathParam("status") String status){
 		
-		User user = new User();
-		user.setEmailId("hconstant@test.com");
-		user.setGroup(new Group(GroupType.ORGANIZATION, "CSD East"));
-		user.setPhoneNo("555-555-5555");
-		user.setUserName(username);
-		user.setUserRole(new UserRole("Developer", "Medium", "2"));
-		
-		ObjectId id = ObjectId.get();
+		System.out.println("User: " + userId);
+		System.out.println("Status: " + status);
+
 		try {
+			DBCollection collection = database.getCollection("qualification");
 
-			DBCollection collection = database.getCollection("users");
-			BasicDBObject dbObject = new BasicDBObject();
-			dbObject.put("_id", id);
-			dbObject.put("name", user.getUserName());
-			dbObject.put("email", user.getEmailId());
-			dbObject.put("phone", user.getPhoneNo());
-			dbObject.put("group", user.getGroup());
-			dbObject.put("role", user.getUserRole());
-
-			collection.insert(dbObject);
+			BasicDBObject query = new BasicDBObject();
+			query.put("userName", userId.trim());
+			//query.put("groupQualification.status", Status.PENDING.toString());
 			
-		} catch (MongoException ex) {
+			BasicDBObject update = new BasicDBObject();
+			
+			if(status.toUpperCase().equals(Status.APPROVED.toString())){
+				update.put("$set", new BasicDBObject("groupQualification.status",Status.APPROVED.toString()));
+			}
+			if(status.toUpperCase().equals(Status.PENDING.toString())){
+				update.put("$set", new BasicDBObject("groupQualification.status",Status.PENDING.toString()));
+			}
+			else if(status.toUpperCase().equals(Status.REJECTED.toString())){
+				update.put("$set", new BasicDBObject("groupQualification.status",Status.REJECTED.toString()));
+			}
 
-			System.out.println("Error: " + ex.getMessage());
-		}
+			collection.update(query,update);
+			
+		} 
+		catch (Exception mex) {
+			
+			//System.out.println("Error: " + mex);
+			logger.error(mex);
+		} 
 	}
-
+	
 }

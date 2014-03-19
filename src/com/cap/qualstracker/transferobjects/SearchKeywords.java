@@ -6,31 +6,43 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import com.mongodb.BasicDBObject;
 
-
 @XmlRootElement
 public class SearchKeywords extends BasicDBObject implements Serializable{
 
 	private static final long serialVersionUID = 1L;
-	
-	private String keywordId;
+
+	private int keywordId;
 	private String keywordName;
 	
-	public SearchKeywords(String keywordId, String keywordName){
-		put("_id", keywordId);
-		put("keyWord", keywordName);
+	/**
+	 * Empty constructor
+	 */
+	public SearchKeywords(){
+		super();
+	}
+	
+	/**
+	 * Constructor taking the following params
+	 * 
+	 * @param keywordId
+	 * @param keywordName
+	 */
+	public SearchKeywords(int keywordId, String keywordName){
+		put("keywordId", keywordId);
+		put("keywordName", keywordName);
 	}
 
 	/**
 	 * @return the keywordId
 	 */
-	public String getKeywordId() {
+	public int getKeywordId() {
 		return keywordId;
 	}
 
 	/**
 	 * @param keywordId the keywordId to set
 	 */
-	public void setKeywordId(String keywordId) {
+	public void setKeywordId(int keywordId) {
 		this.keywordId = keywordId;
 	}
 
@@ -47,5 +59,4 @@ public class SearchKeywords extends BasicDBObject implements Serializable{
 	public void setKeywordName(String keywordName) {
 		this.keywordName = keywordName;
 	}
-	
 }

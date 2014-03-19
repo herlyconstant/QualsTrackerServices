@@ -6,6 +6,8 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
+import org.apache.log4j.Logger;
+
 import com.cap.qualstracker.interfaces.GroupServiceInterface;
 import com.cap.qualstracker.transferobjects.Group;
 import com.mongodb.BasicDBObject;
@@ -19,6 +21,8 @@ import com.mongodb.util.JSON;
 @SuppressWarnings("unused")
 @Path("groupservice")
 public class GroupService extends BaseService implements GroupServiceInterface{
+	
+	private static final Logger logger = Logger.getLogger(GroupService.class);
 
 	DB database = getDB();
 	
@@ -33,15 +37,16 @@ public class GroupService extends BaseService implements GroupServiceInterface{
 		
 			DBCollection collection = database.getCollection("users");
 
-			DBObject query = new BasicDBObject("userName", userId);
+			DBObject query = new BasicDBObject("userName", userId.trim());
 			DBObject field = new BasicDBObject("groups.groupName", 1);
 			field.put("_id", 0);
 
 			cursor = collection.find(query, field);
-		}
-		catch(MongoException ex){
 			
-			ex.printStackTrace(System.out);
+			logger.info("groups retrieved for "+userId);
+		}
+		catch(MongoException mex){
+			logger.error(mex);
 		}
 		finally {
 			cursor.close();
@@ -64,7 +69,9 @@ public class GroupService extends BaseService implements GroupServiceInterface{
 			cursor = collection.find();
 			
 		} catch (MongoException ex) {
-			ex.printStackTrace(System.out);
+			
+			logger.error(ex);
+			//ex.printStackTrace(System.out);
 		}
 		try {
 			while (cursor.hasNext()) {
@@ -73,6 +80,8 @@ public class GroupService extends BaseService implements GroupServiceInterface{
 		} finally {
 			cursor.close();
 		}
+		
+		logger.info("Groups retrieved.");
 
 		return JSON.serialize(cursor);
 	}

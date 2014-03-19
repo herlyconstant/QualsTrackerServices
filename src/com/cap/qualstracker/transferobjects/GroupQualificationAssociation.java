@@ -5,10 +5,11 @@ import java.io.Serializable;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.cap.qualstracker.enums.Status;
+import com.mongodb.BasicDBObject;
 
 
 @XmlRootElement
-public class GroupQualificationAssociation implements Serializable{
+public class GroupQualificationAssociation extends BasicDBObject implements Serializable{
 
 	private static final long serialVersionUID = 1L;
 	
@@ -21,6 +22,25 @@ public class GroupQualificationAssociation implements Serializable{
 	public GroupQualificationAssociation(){
 		super();
 	}
+	
+	/**
+	 * @param groupQualAssociationId
+	 * @param qualificationAssociationId
+	 * @param groupId
+	 * @param status
+	 * @param approvedBy
+	 */
+	public GroupQualificationAssociation(String groupQualAssociationId,
+			String qualificationAssociationId, String groupId, Status status,
+			String approvedBy) {
+
+		put("groupQualAssociationId", groupQualAssociationId);
+		put("qualificationAssociationId", qualificationAssociationId);
+		put("groupId", groupId);
+		put("status", status);
+		put("approvedBy", approvedBy);
+	}
+
 
 	/**
 	 * @return the groupQualAssociationId

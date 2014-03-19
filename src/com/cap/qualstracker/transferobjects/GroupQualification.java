@@ -6,10 +6,11 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import com.cap.qualstracker.enums.Maturity;
 import com.cap.qualstracker.enums.Status;
+import com.mongodb.BasicDBObject;
 
 
 @XmlRootElement
-public class GroupQualification implements Serializable {
+public class GroupQualification extends BasicDBObject implements Serializable{
 
 	private static final long serialVersionUID = 1L;
 
@@ -21,6 +22,19 @@ public class GroupQualification implements Serializable {
 		super();
 	}
 	
+	/**
+	 * @param maturity
+	 * @param status
+	 * @param approvedBy
+	 */
+	public GroupQualification(Maturity maturity, Status status,
+			String approvedBy) {
+		
+		put("maturity", maturity);
+		put("status", status);
+		put("approvedBy", approvedBy);
+	}
+
 	/**
 	 * @return the maturity
 	 */

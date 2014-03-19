@@ -7,7 +7,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 import com.cap.qualstracker.enums.GroupType;
 import com.mongodb.BasicDBObject;
 
-
 @XmlRootElement
 public class Group extends BasicDBObject implements Serializable{
 
@@ -17,8 +16,9 @@ public class Group extends BasicDBObject implements Serializable{
 	private String groupName;
 	
 	public Group(){
-		
+		super();
 	}
+	
 	public Group(GroupType groupType, String groupName){
 		put("groupType", groupType);
 		put("groupName", groupName);
